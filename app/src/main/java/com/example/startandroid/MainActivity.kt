@@ -14,6 +14,8 @@ class MainActivity : AppCompatActivity() {
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
     private val scope = CoroutineScope(Job() + CoroutineName("MyScope"))
+
+    private lateinit var job: Job
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -28,24 +30,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onCancel() {
-        TODO("Not yet implemented")
+        log("onCancel")
+        job.cancel()
     }
 
     private fun onRun() {
         log("onRun, start")
 
-        scope.launch {
+        job = scope.launch {
             log("coroutine, start")
-            TimeUnit.MICROSECONDS.sleep(1000)
+            var x = 0
+            while (x < 5) {
+                TimeUnit.MILLISECONDS.sleep(1000)
+                log("coroutine, ${x++} active: ${this.isActive}")
+            }
             log("coroutine, end")
-        }
-
-        log("onRun, middle")
-
-        scope.launch {
-            log("coroutine2, start")
-            TimeUnit.MICROSECONDS.sleep(1500)
-            log("coroutine2, end")
         }
 
         log("onRun, end")

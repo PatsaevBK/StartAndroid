@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
             log("coroutine, start")
             var x = 0
             while (x < 5) {
-                TimeUnit.MILLISECONDS.sleep(1000)
-                log("coroutine, ${x++} active: ${this.isActive}")
+                delay(1000)
+                log("coroutine, ${x++}, isActive: $isActive")
             }
             log("coroutine, end")
         }
@@ -50,9 +50,9 @@ class MainActivity : AppCompatActivity() {
         log("onRun, end")
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        log("onDestroy")
+    override fun onStop() {
+        super.onStop()
+        log("onStop")
         scope.cancel()
     }
 

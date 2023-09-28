@@ -38,17 +38,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
-        job = scope.launch(start = CoroutineStart.LAZY) {
+        scope.launch {
             log("parent coroutine, start")
 
-            TimeUnit.MILLISECONDS.sleep(2000)
+            val data = async { getData() }
+            val data2 = async { getData2() }
+            val result = "${data.await()}, ${data2.await()}"
 
-            log("parent coroutine, end")
+
+            log("parent coroutine, end. Result = $result")
         }
     }
 
+    private suspend fun getData(): String {
+        log("getData")
+        delay(1000)
+        return "data"
+    }
+
+    private suspend fun getData2(): String {
+        log("getData2")
+        delay(1000)
+        return "data2"
+    }
+
     private fun onRun2() {
-        job.start()
     }
 
     override fun onStop() {

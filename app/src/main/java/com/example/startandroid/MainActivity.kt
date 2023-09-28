@@ -27,6 +27,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.buttonCancel).setOnClickListener {
             onCancel()
         }
+        findViewById<Button>(R.id.buttonRun2).setOnClickListener {
+            onRun2()
+        }
     }
 
     private fun onCancel() {
@@ -35,19 +38,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
-        scope.launch {
+        job = scope.launch(start = CoroutineStart.LAZY) {
             log("parent coroutine, start")
 
-            val job = launch {
-                log("child coroutine, start")
-                TimeUnit.MILLISECONDS.sleep(1000)
-                log("child coroutine, end")
-            }
+            TimeUnit.MILLISECONDS.sleep(2000)
 
-            log("parent coroutine, wait")
-            job.join()
             log("parent coroutine, end")
         }
+    }
+
+    private fun onRun2() {
+        job.start()
     }
 
     override fun onStop() {

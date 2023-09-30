@@ -39,10 +39,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
+        val job1 = scope.launch {
+            log("parent start")
+            val res = async {
+                log("child start")
+                delay(1000)
+                log("child end")
+            }
+            res.await()
+            log("parent end")
+        }
         scope.launch {
-            log("start coroutine")
-            val data = getData()
-            log("end coroutine")
+            delay(500)
+            log("parent job is active: ${job1.isActive}")
+            delay(1000)
+            log("parent job is active: ${job1.isActive}")
         }
     }
 
@@ -59,16 +70,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun2() {
-        log("scope, ${contextToString(scope.coroutineContext)}")
-        scope.launch {
-            log("coroutine, lvl 1, ${contextToString(this.coroutineContext)}")
-            launch(Dispatchers.Default ) {
-                log("coroutine, lvl 2, ${contextToString(coroutineContext)}")
-                launch {
-                    log("coroutine, lvl 3 ${contextToString(coroutineContext)}")
-                }
-            }
-        }
+
     }
 
     override fun onStop() {

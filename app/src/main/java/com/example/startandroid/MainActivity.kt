@@ -15,9 +15,14 @@ class MainActivity : AppCompatActivity() {
 
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
-    private val scope = CoroutineScope(Dispatchers.Unconfined)
+    private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
+        log("$throwable was handled in Coroutine_${context[CoroutineName]?.name}")
+    }
+
+    private val scope = CoroutineScope(Dispatchers.IO + exceptionHandler)
 
     private lateinit var job: Job
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -39,10 +44,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
-        scope.launch {
-            log("start coroutine")
-            val data = getData()
-            log("end coroutine")
+        scope.launch(CoroutineName("1")) {
+            launch(CoroutineName("1_1")) {
+                val def = async {
+                    TimeUnit.MILLISECONDS.sleep(500)
+                    log("exception")
+                    Integer.parseInt("one")
+                }
+                log("before await")
+                //имеет смысл await обернуть в try catch только если хочешь чтобы остаток кода (repeatIsActive) выполнился
+                try { def.await() } catch (e: Exception) { log("catch exception in try-catch") }
+                repeatIsActive()
+            }
+            launch(CoroutineName("1_2")) {
+                repeatIsActive()
+            }
+            repeatIsActive()
+        }
+        scope.launch(CoroutineName("2")) {
+            launch(CoroutineName("2_1")) {
+                repeatIsActive()
+            }
+            launch(CoroutineName("2_2")) {
+                repeatIsActive()
+            }
+            repeatIsActive()
         }
     }
 
@@ -83,4 +109,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun contextToString(context: CoroutineContext) =
         "Job = ${context[Job]}, Dispatcher = ${context[ContinuationInterceptor]}}"
+
+    private fun CoroutineScope.repeatIsActive() {
+        repeat(5) {
+            TimeUnit.MILLISECONDS.sleep(300)
+            log("${coroutineContext[CoroutineName]?.name} is active: $isActive")
+        }
+    }
 }

@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
     private fun onRun() {
         scope.launch(CoroutineName("1")) {
             launch(CoroutineName("1_1")) {
-                val def = async {
+                val def = async(SupervisorJob(coroutineContext[Job])) {
                     TimeUnit.MILLISECONDS.sleep(500)
                     log("exception")
                     Integer.parseInt("one")

@@ -15,7 +15,11 @@ class MainActivity : AppCompatActivity() {
 
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
-    private val scope = CoroutineScope(Dispatchers.Unconfined)
+    private val handler = CoroutineExceptionHandler { coroutineContext, throwable ->
+        log("exception was handled in Coroutine_${coroutineContext[CoroutineName]?.name}")
+    }
+    private val scope = CoroutineScope( handler)
+
 
     private lateinit var job: Job
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,12 +42,31 @@ class MainActivity : AppCompatActivity() {
         job.cancel()
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private fun onRun() {
-        scope.launch {
-            log("start coroutine")
-            val data = getData()
-            log("end coroutine")
+        log("start onRun")
+        scope.launch( CoroutineName("1")  ) {
+            log("start coroutine 1 ${coroutineContext[CoroutineDispatcher.Key].toString()}")
+            launch(CoroutineName("1_1")) {
+                TimeUnit.MILLISECONDS.sleep(500)
+                val n = Integer.parseInt("one")
+            }
+            launch(CoroutineName("1_2")) {
+                TimeUnit.MILLISECONDS.sleep(1000)
+            }
         }
+
+        scope.launch(CoroutineName("2")) {
+            launch(CoroutineName("2_1")) {
+                TimeUnit.MILLISECONDS.sleep(2000)
+                log("${coroutineContext[CoroutineName]?.name}")
+            }
+            launch(CoroutineName("2_2")) {
+                TimeUnit.MILLISECONDS.sleep(3000)
+            }
+        }
+
+        log("end onRun")
     }
 
     private suspend fun getData(): String = suspendCoroutine {
@@ -54,21 +77,13 @@ class MainActivity : AppCompatActivity() {
             it.resume("Data")
         }
     }
+
     private suspend fun getData2(): String {
         return ""
     }
 
     private fun onRun2() {
-        log("scope, ${contextToString(scope.coroutineContext)}")
-        scope.launch {
-            log("coroutine, lvl 1, ${contextToString(this.coroutineContext)}")
-            launch(Dispatchers.Default ) {
-                log("coroutine, lvl 2, ${contextToString(coroutineContext)}")
-                launch {
-                    log("coroutine, lvl 3 ${contextToString(coroutineContext)}")
-                }
-            }
-        }
+
     }
 
     override fun onStop() {

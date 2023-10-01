@@ -15,9 +15,14 @@ class MainActivity : AppCompatActivity() {
 
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
-    private val scope = CoroutineScope(Dispatchers.Unconfined)
+    private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
+        log("$throwable was handled in Coroutine_${context[CoroutineName]?.name}")
+    }
+
+    private val scope = CoroutineScope(Dispatchers.IO + exceptionHandler)
 
     private lateinit var job: Job
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -39,10 +44,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
-        scope.launch {
-            log("start coroutine")
-            val data = getData()
-            log("end coroutine")
+        scope.launch(CoroutineName("1")) {
+            launch(CoroutineName("1_1")) {
+                launch(CoroutineName("1_1_1") + SupervisorJob(coroutineContext[Job])) {
+                    TimeUnit.MILLISECONDS.sleep(500)
+                    log("exception")
+                    Integer.parseInt("one")
+                }
+                launch(CoroutineName("1_1_2")) {
+                    repeatIsActive()
+                }
+                repeatIsActive()
+            }
+            launch(CoroutineName("1_2")) {
+                repeatIsActive()
+            }
+            repeatIsActive()
+        }
+        scope.launch(CoroutineName("2")) {
+            launch(CoroutineName("2_1")) {
+                repeatIsActive()
+            }
+            launch(CoroutineName("2_2")) {
+                repeatIsActive()
+            }
+            repeatIsActive()
         }
     }
 
@@ -59,16 +85,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun2() {
-        log("scope, ${contextToString(scope.coroutineContext)}")
-        scope.launch {
-            log("coroutine, lvl 1, ${contextToString(this.coroutineContext)}")
-            launch(Dispatchers.Default ) {
-                log("coroutine, lvl 2, ${contextToString(coroutineContext)}")
-                launch {
-                    log("coroutine, lvl 3 ${contextToString(coroutineContext)}")
-                }
-            }
-        }
+
     }
 
     override fun onStop() {
@@ -83,4 +100,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun contextToString(context: CoroutineContext) =
         "Job = ${context[Job]}, Dispatcher = ${context[ContinuationInterceptor]}}"
+
+    private fun CoroutineScope.repeatIsActive() {
+        repeat(5) {
+            TimeUnit.MILLISECONDS.sleep(300)
+            log("${coroutineContext[CoroutineName]?.name} is active: $isActive")
+        }
+    }
 }
